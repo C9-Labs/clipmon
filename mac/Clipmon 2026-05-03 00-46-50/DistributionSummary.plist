@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Clipmon.pkg</key>
+	<array>
+		<dict>
+			<key>architectures</key>
+			<array>
+				<string>x86_64</string>
+				<string>arm64</string>
+			</array>
+			<key>buildNumber</key>
+			<string>1</string>
+			<key>certificate</key>
+			<dict>
+				<key>SHA1</key>
+				<string>2CFD4271E35CF8CA02BE217A17AAEB8F9AC9A4F4</string>
+				<key>dateExpires</key>
+				<string>02/05/27</string>
+				<key>type</key>
+				<string>Cloud Managed Apple Distribution</string>
+			</dict>
+			<key>entitlements</key>
+			<dict>
+				<key>com.apple.application-identifier</key>
+				<string>4CPVHKQX3P.com.rare.Clipmon</string>
+				<key>com.apple.developer.team-identifier</key>
+				<string>4CPVHKQX3P</string>
+				<key>com.apple.security.app-sandbox</key>
+				<true/>
+				<key>com.apple.security.files.user-selected.read-only</key>
+				<true/>
+			</dict>
+			<key>name</key>
+			<string>Clipmon.app</string>
+			<key>profile</key>
+			<dict>
+				<key>UUID</key>
+				<string>4f067fbe-bcdc-4f41-bbd6-092b90c678c3</string>
+				<key>dateExpires</key>
+				<string>02/05/27</string>
+				<key>name</key>
+				<string>Mac Team Store Provisioning Profile: com.rare.Clipmon</string>
+			</dict>
+			<key>symbols</key>
+			<true/>
+			<key>team</key>
+			<dict>
+				<key>id</key>
+				<string>4CPVHKQX3P</string>
+				<key>name</key>
+				<string>Vedansh Nigam</string>
+			</dict>
+			<key>versionNumber</key>
+			<string>1.0</string>
+		</dict>
+	</array>
+</dict>
+</plist>
