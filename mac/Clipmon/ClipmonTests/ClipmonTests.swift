@@ -37,4 +37,19 @@ struct ClipmonTests {
         #expect(entry.preview == "hello world")
     }
 
+    @Test func sidebarLayoutBreakpointsSwitchBeforeCompression() async throws {
+        let regular = SidebarLayout(width: 440)
+        let compact = SidebarLayout(width: 380)
+        let veryCompact = SidebarLayout(width: 300)
+
+        #expect(regular.isCompact == false)
+        #expect(regular.isVeryCompact == false)
+
+        #expect(compact.isCompact == true)
+        #expect(compact.isVeryCompact == false)
+
+        #expect(veryCompact.isCompact == true)
+        #expect(veryCompact.isVeryCompact == true)
+    }
+
 }

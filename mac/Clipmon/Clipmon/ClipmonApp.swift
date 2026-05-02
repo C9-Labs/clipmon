@@ -45,6 +45,7 @@ struct ClipmonApp: App {
             ContentView()
                 .environmentObject(controller)
         }
+        .windowResizability(.contentMinSize)
         .modelContainer(sharedModelContainer)
 
         MenuBarExtra("Clipmon", systemImage: "doc.on.clipboard") {

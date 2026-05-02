@@ -34,77 +34,100 @@ struct ContentView: View {
     }
 
     var body: some View {
-        NavigationSplitView {
-            sidebar
-                .navigationTitle("Clipmon")
-        } detail: {
-            detailPane
-        }
-        .frame(minWidth: 980, minHeight: 650)
-        .background(backgroundGradient)
-        .searchable(text: $controller.searchText, placement: .sidebar, prompt: "Search clipboard history")
-        .toolbar {
-            ToolbarItemGroup {
-                Button {
-                    controller.captureCurrentClipboard(force: true)
-                } label: {
-                    Label("Capture Now", systemImage: "arrow.down.doc")
-                }
+        GeometryReader { proxy in
+            let isCompactLayout = proxy.size.width < 980
 
-                Button {
-                    if controller.isMonitoring {
-                        controller.stop()
-                    } else {
-                        controller.startIfNeeded(modelContext: modelContext)
+            NavigationSplitView {
+                GeometryReader { sidebarProxy in
+                    let sidebarLayout = SidebarLayout(width: sidebarProxy.size.width)
+
+                    sidebar(isCompact: sidebarLayout.isCompact, isVeryCompact: sidebarLayout.isVeryCompact)
+                }
+                .navigationSplitViewColumnWidth(min: 300, ideal: 340, max: 420)
+                    .navigationTitle("Clipmon")
+            } detail: {
+                detailPane(isCompact: isCompactLayout)
+            }
+            .frame(minWidth: 920, minHeight: 660)
+            .background(backgroundGradient)
+            .searchable(text: $controller.searchText, placement: .sidebar, prompt: "Search clipboard history")
+            .toolbar {
+                ToolbarItemGroup {
+                    Button {
+                        controller.captureCurrentClipboard(force: true)
+                    } label: {
+                        toolbarLabel("Capture Now", icon: "arrow.down.doc", compact: isCompactLayout)
                     }
-                } label: {
-                    Label(controller.isMonitoring ? "Pause" : "Resume", systemImage: controller.isMonitoring ? "pause.fill" : "play.fill")
+
+                    Button {
+                        if controller.isMonitoring {
+                            controller.stop()
+                        } else {
+                            controller.startIfNeeded(modelContext: modelContext)
+                        }
+                    } label: {
+                        toolbarLabel(
+                            controller.isMonitoring ? "Pause" : "Resume",
+                            icon: controller.isMonitoring ? "pause.fill" : "play.fill",
+                            compact: isCompactLayout
+                        )
+                    }
+
+                    Button(role: .destructive) {
+                        showingClearConfirmation = true
+                    } label: {
+                        toolbarLabel("Clear", icon: "trash", compact: isCompactLayout)
+                    }
+                }
+            }
+            .confirmationDialog(
+                "Clear clipboard history?",
+                isPresented: $showingClearConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button("Clear Unpinned", role: .destructive) {
+                    controller.clearHistory(keepingPinned: true)
                 }
 
-                Button(role: .destructive) {
-                    showingClearConfirmation = true
-                } label: {
-                    Label("Clear", systemImage: "trash")
+                Button("Clear Everything", role: .destructive) {
+                    controller.clearHistory(keepingPinned: false)
                 }
+            } message: {
+                Text("Pinned entries can be preserved so you do not lose important clips.")
             }
-        }
-        .confirmationDialog(
-            "Clear clipboard history?",
-            isPresented: $showingClearConfirmation,
-            titleVisibility: .visible
-        ) {
-            Button("Clear Unpinned", role: .destructive) {
-                controller.clearHistory(keepingPinned: true)
+            .onAppear {
+                controller.startIfNeeded(modelContext: modelContext)
             }
-
-            Button("Clear Everything", role: .destructive) {
-                controller.clearHistory(keepingPinned: false)
-            }
-        } message: {
-            Text("Pinned entries can be preserved so you do not lose important clips.")
-        }
-        .onAppear {
-            controller.startIfNeeded(modelContext: modelContext)
-        }
-        .background(
-            WindowAccessor { window in
-                mainWindow = window
-            }
-        )
-        .onChange(of: filteredEntries.map(\.fingerprint)) { _, newValue in
-            if let selectionFingerprint, !newValue.contains(selectionFingerprint) {
-                self.selectionFingerprint = newValue.first
-            } else if selectionFingerprint == nil {
-                self.selectionFingerprint = newValue.first
+            .background(
+                WindowAccessor { window in
+                    mainWindow = window
+                }
+            )
+            .onChange(of: filteredEntries.map(\.fingerprint)) { _, newValue in
+                if let selectionFingerprint, !newValue.contains(selectionFingerprint) {
+                    self.selectionFingerprint = newValue.first
+                } else if selectionFingerprint == nil {
+                    self.selectionFingerprint = newValue.first
+                }
             }
         }
     }
 
-    private var sidebar: some View {
-        VStack(spacing: 16) {
-            headerCard
+    private func toolbarLabel(_ title: String, icon: String, compact: Bool) -> some View {
+        Group {
+            if compact {
+                Image(systemName: icon)
+            } else {
+                Label(title, systemImage: icon)
+            }
+        }
+    }
 
-            FileDropZoneView { urls in
+    private func sidebar(isCompact: Bool, isVeryCompact: Bool) -> some View {
+        VStack(spacing: isCompact ? 12 : 16) {
+            headerCard(isCompact: isCompact)
+
+            FileDropZoneView(isCompact: isCompact, isVeryCompact: isVeryCompact) { urls in
                 controller.importFiles(urls)
                 endFileDragSession()
             } onDragStateChange: { isTargeted in
@@ -125,10 +148,10 @@ struct ContentView: View {
             }
             .pickerStyle(.segmented)
 
-            statsRow
+            statsRow(isCompact: isCompact, isVeryCompact: isVeryCompact)
 
             List(filteredEntries, id: \.fingerprint) { entry in
-                ClipboardEntryRow(entry: entry)
+                ClipboardEntryRow(entry: entry, isCompact: isCompact, isVeryCompact: isVeryCompact)
                     .listRowBackground(selectionFingerprint == entry.fingerprint ? Color.accentColor.opacity(0.14) : Color.clear)
                     .contentShape(Rectangle())
                     .onTapGesture {
@@ -169,16 +192,17 @@ struct ContentView: View {
             }
             .listStyle(.sidebar)
         }
-        .padding(16)
+        .padding(isCompact ? 12 : 16)
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-        .padding(16)
+        .padding(isCompact ? 12 : 16)
     }
 
-    private var detailPane: some View {
+    private func detailPane(isCompact: Bool) -> some View {
         Group {
             if let entry = selectedEntry {
                 ClipboardDetailView(
                     entry: entry,
+                    isCompact: isCompact,
                     onCopy: { controller.copyToClipboard(entry) },
                     onTogglePin: { controller.togglePin(entry) },
                     onDelete: {
@@ -200,26 +224,28 @@ struct ContentView: View {
         .animation(.snappy, value: selectedEntry?.fingerprint)
     }
 
-    private var headerCard: some View {
+    private func headerCard(isCompact: Bool) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Label("Clipboard Vault", systemImage: "tray.full")
-                    .font(.title2.weight(.semibold))
+                    .font(isCompact ? .headline.weight(.semibold) : .title2.weight(.semibold))
                 Spacer()
                 Capsule()
                     .fill(controller.isMonitoring ? Color.green.opacity(0.2) : Color.orange.opacity(0.2))
                     .overlay(
-                        Text(controller.isMonitoring ? "Live" : "Paused")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(controller.isMonitoring ? .green : .orange)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 4)
+                        Group {
+                            Text(controller.isMonitoring ? "Live" : "Paused")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(controller.isMonitoring ? .green : .orange)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 4)
+                        }
                     )
-                    .frame(height: 28)
+                    .frame(height: isCompact ? 24 : 28)
             }
 
             Text("A local clipboard manager backed by SwiftData.")
-                .font(.subheadline)
+                .font(isCompact ? .caption : .subheadline)
                 .foregroundStyle(.secondary)
 
             Text(controller.statusMessage)
@@ -227,7 +253,7 @@ struct ContentView: View {
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
+        .padding(isCompact ? 12 : 16)
         .background(
             LinearGradient(
                 colors: [
@@ -242,11 +268,11 @@ struct ContentView: View {
         )
     }
 
-    private var statsRow: some View {
+    private func statsRow(isCompact: Bool, isVeryCompact: Bool) -> some View {
         HStack(spacing: 12) {
-            StatCard(title: "Total", value: "\(entries.count)", systemImage: "list.bullet.rectangle")
-            StatCard(title: "Pinned", value: "\(pinnedCount)", systemImage: "pin")
-            StatCard(title: "Visible", value: "\(filteredEntries.count)", systemImage: "magnifyingglass")
+            StatCard(title: "Total", value: "\(entries.count)", systemImage: "list.bullet.rectangle", isCompact: isCompact, isVeryCompact: isVeryCompact)
+            StatCard(title: "Pinned", value: "\(pinnedCount)", systemImage: "pin", isCompact: isCompact, isVeryCompact: isVeryCompact)
+            StatCard(title: "Visible", value: "\(filteredEntries.count)", systemImage: "magnifyingglass", isCompact: isCompact, isVeryCompact: isVeryCompact)
         }
     }
 
@@ -278,18 +304,32 @@ private enum EntryScope: String, CaseIterable {
     }
 }
 
+struct SidebarLayout {
+    let width: CGFloat
+
+    var isCompact: Bool {
+        width < 420
+    }
+
+    var isVeryCompact: Bool {
+        width < 340
+    }
+}
+
 private struct ClipboardEntryRow: View {
     let entry: ClipboardEntry
+    let isCompact: Bool
+    let isVeryCompact: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: isCompact ? 6 : 8) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Label(entry.kind.displayName, systemImage: entry.kind.sfSymbol)
-                    .font(.caption.weight(.semibold))
+                    .font(isCompact ? .caption2.weight(.semibold) : .caption.weight(.semibold))
                     .foregroundStyle(.secondary)
 
                 Text(entry.displayTitle)
-                    .font(.body)
+                    .font(isCompact ? .callout : .body)
                     .foregroundStyle(.primary)
                     .lineLimit(2)
 
@@ -316,28 +356,29 @@ private struct ClipboardEntryRow: View {
             .font(.caption)
             .foregroundStyle(.secondary)
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, isCompact ? 2 : 4)
     }
 }
 
 private struct ClipboardDetailView: View {
     let entry: ClipboardEntry
+    let isCompact: Bool
     let onCopy: () -> Void
     let onTogglePin: () -> Void
     let onDelete: () -> Void
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: isCompact ? 14 : 20) {
+                VStack(alignment: .leading, spacing: isCompact ? 8 : 12) {
                     HStack(alignment: .center) {
-                        VStack(alignment: .leading, spacing: 6) {
+                        VStack(alignment: .leading, spacing: isCompact ? 4 : 6) {
                             Label(entry.kind.displayName, systemImage: entry.kind.sfSymbol)
                                 .font(.headline)
                                 .foregroundStyle(.secondary)
 
                             Text(entry.displayTitle)
-                                .font(.title2.weight(.semibold))
+                                .font(isCompact ? .headline.weight(.semibold) : .title2.weight(.semibold))
                                 .fixedSize(horizontal: false, vertical: true)
                         }
 
@@ -350,7 +391,7 @@ private struct ClipboardDetailView: View {
                         }
                     }
 
-                    HStack(spacing: 10) {
+                    HStack(spacing: isCompact ? 8 : 10) {
                         DetailChip(icon: "clock", text: entry.createdAt.formatted(date: .abbreviated, time: .shortened))
 
                         if let sourceApplication = entry.sourceApplication {
@@ -364,22 +405,22 @@ private struct ClipboardDetailView: View {
                         DetailChip(icon: entry.kind.sfSymbol, text: entry.kind.displayName)
                     }
                 }
-                .padding(20)
+                .padding(isCompact ? 14 : 20)
                 .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
 
                 if let image = entry.image {
                     Image(nsImage: image)
                         .resizable()
                         .scaledToFit()
-                        .frame(maxWidth: 420)
-                        .padding(12)
+                        .frame(maxWidth: isCompact ? 320 : 420)
+                        .padding(isCompact ? 8 : 12)
                         .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
                 }
 
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: isCompact ? 10 : 12) {
                     HStack {
                         Text("Content")
-                            .font(.headline)
+                            .font(isCompact ? .subheadline.weight(.semibold) : .headline)
 
                         Spacer()
 
@@ -403,11 +444,11 @@ private struct ClipboardDetailView: View {
                         .textSelection(.enabled)
                         .font(.system(.body, design: .monospaced))
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(16)
+                        .padding(isCompact ? 12 : 16)
                         .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                 }
             }
-            .frame(maxWidth: 760, alignment: .leading)
+            .frame(maxWidth: isCompact ? 700 : 760, alignment: .leading)
         }
     }
 }
@@ -429,18 +470,20 @@ private struct StatCard: View {
     let title: String
     let value: String
     let systemImage: String
+    let isCompact: Bool
+    let isVeryCompact: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: isVeryCompact ? 2 : 6) {
             Label(title, systemImage: systemImage)
-                .font(.caption.weight(.semibold))
+                .font(isCompact ? .caption2.weight(.semibold) : .caption.weight(.semibold))
                 .foregroundStyle(.secondary)
 
             Text(value)
-                .font(.title2.weight(.semibold))
+                .font(isVeryCompact ? .headline.weight(.semibold) : .title2.weight(.semibold))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(14)
+        .padding(isVeryCompact ? 10 : 14)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 }
@@ -478,16 +521,18 @@ private struct EmptyStateView: View {
 }
 
 private struct FileDropZoneView: View {
+    let isCompact: Bool
+    let isVeryCompact: Bool
     let onDropFiles: ([URL]) -> Void
     let onDragStateChange: ((Bool) -> Void)?
     @State private var isTargeted = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: isCompact ? 4 : 8) {
             HStack {
                 Image(systemName: "square.and.arrow.down")
                 Text("Drop files here")
-                    .font(.headline)
+                    .font(isCompact ? .subheadline.weight(.semibold) : .headline)
                 Spacer()
             }
 
@@ -495,7 +540,7 @@ private struct FileDropZoneView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
-        .padding(14)
+        .padding(isVeryCompact ? 10 : 14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
