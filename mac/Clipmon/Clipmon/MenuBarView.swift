@@ -2,6 +2,7 @@ import AppKit
 import SwiftData
 import SwiftUI
 
+@available(macOS 14.0, *)
 struct MenuBarView: View {
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var controller: ClipboardHistoryController
@@ -21,6 +22,8 @@ struct MenuBarView: View {
     private var hasSearchText: Bool {
         !controller.searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
+
+    init() {}
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -153,6 +156,7 @@ struct MenuBarView: View {
     }
 }
 
+@available(macOS 14.0, *)
 private struct MenuBarEntryRow: View {
     let entry: ClipboardEntry
     let onCopy: () -> Void

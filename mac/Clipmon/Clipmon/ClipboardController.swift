@@ -5,6 +5,7 @@ import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
 
+@available(macOS 14.0, *)
 struct ClipboardCapturePayload {
     let kind: ClipboardContentKind
     let textContent: String?
@@ -26,8 +27,11 @@ struct ClipboardCapturePayload {
     }
 }
 
+@available(macOS 14.0, *)
 @MainActor
 final class ClipboardHistoryController: ObservableObject {
+    static let shared = ClipboardHistoryController()
+
     @Published var searchText = ""
     @Published var isMonitoring = false
     @Published var statusMessage = "Ready to watch the clipboard"
@@ -45,8 +49,9 @@ final class ClipboardHistoryController: ObservableObject {
         captureCurrentClipboard(force: true)
 
         let timer = Timer.scheduledTimer(withTimeInterval: 0.8, repeats: true) { [weak self] _ in
+            guard let self else { return }
             Task { @MainActor in
-                self?.captureCurrentClipboard()
+                self.captureCurrentClipboard()
             }
         }
         pollTimer = timer
@@ -62,7 +67,7 @@ final class ClipboardHistoryController: ObservableObject {
 
     func togglePin(_ entry: ClipboardEntry) {
         entry.isPinned.toggle()
-        entry.updatedAt = .now
+        entry.updatedAt = Date()
         saveContext()
     }
 
@@ -120,12 +125,12 @@ final class ClipboardHistoryController: ObservableObject {
 
         lastObservedChangeCount = pasteboard.changeCount
         statusMessage = "Copied \(entry.kind.displayName.lowercased()) back to clipboard"
-        entry.updatedAt = .now
+        entry.updatedAt = Date()
         saveContext()
     }
 
     func captureCurrentClipboard(force: Bool = false) {
-        guard let modelContext else { return }
+        guard modelContext != nil else { return }
 
         let pasteboard = NSPasteboard.general
         guard force || pasteboard.changeCount != lastObservedChangeCount else { return }

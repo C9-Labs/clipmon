@@ -37,6 +37,7 @@ enum ClipboardContentKind: String, CaseIterable, Codable {
     }
 }
 
+@available(macOS 14.0, *)
 @Model
 final class ClipboardEntry {
     @Attribute(.unique) var fingerprint: String
@@ -63,8 +64,8 @@ final class ClipboardEntry {
         fileURLString: String? = nil,
         payloadData: Data? = nil,
         utiIdentifier: String? = nil,
-        createdAt: Date = .now,
-        updatedAt: Date = .now,
+        createdAt: Date = Date(),
+        updatedAt: Date = Date(),
         isPinned: Bool = false,
         sourceApplication: String? = nil
     ) {
@@ -89,6 +90,7 @@ final class ClipboardEntry {
     }
 }
 
+@available(macOS 14.0, *)
 extension ClipboardEntry {
     var displayTitle: String {
         switch kind {
@@ -169,8 +171,8 @@ extension ClipboardEntry {
         self.payloadData = payloadData
         self.utiIdentifier = utiIdentifier
         self.sourceApplication = sourceApplication
-        self.updatedAt = .now
-        self.createdAt = .now
+        self.updatedAt = Date()
+        self.createdAt = Date()
         self.fingerprint = Self.fingerprint(
             kind: kind,
             textContent: textContent,
@@ -205,4 +207,5 @@ extension ClipboardEntry {
     }
 }
 
+@available(macOS 14.0, *)
 typealias Item = ClipboardEntry

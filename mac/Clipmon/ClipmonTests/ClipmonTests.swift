@@ -8,6 +8,7 @@
 import Testing
 @testable import Clipmon
 
+@available(macOS 14.0, *)
 struct ClipmonTests {
 
     @Test func fingerprintIsStableForSameContent() async throws {

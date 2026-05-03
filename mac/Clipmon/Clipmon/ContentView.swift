@@ -2,6 +2,7 @@ import AppKit
 import SwiftData
 import SwiftUI
 
+@available(macOS 14.0, *)
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var controller: ClipboardHistoryController
@@ -316,6 +317,7 @@ struct SidebarLayout {
     }
 }
 
+@available(macOS 14.0, *)
 private struct ClipboardEntryRow: View {
     let entry: ClipboardEntry
     let isCompact: Bool
@@ -360,6 +362,7 @@ private struct ClipboardEntryRow: View {
     }
 }
 
+@available(macOS 14.0, *)
 private struct ClipboardDetailView: View {
     let entry: ClipboardEntry
     let isCompact: Bool
@@ -453,6 +456,7 @@ private struct ClipboardDetailView: View {
     }
 }
 
+@available(macOS 14.0, *)
 private struct DetailChip: View {
     let icon: String
     let text: String
@@ -466,6 +470,7 @@ private struct DetailChip: View {
     }
 }
 
+@available(macOS 14.0, *)
 private struct StatCard: View {
     let title: String
     let value: String
@@ -488,6 +493,7 @@ private struct StatCard: View {
     }
 }
 
+@available(macOS 14.0, *)
 private struct EmptyStateView: View {
     let isMonitoring: Bool
     let statusMessage: String
@@ -520,6 +526,7 @@ private struct EmptyStateView: View {
     }
 }
 
+@available(macOS 14.0, *)
 private struct FileDropZoneView: View {
     let isCompact: Bool
     let isVeryCompact: Bool
@@ -577,6 +584,7 @@ private struct FileDropZoneView: View {
     }
 }
 
+@available(macOS 14.0, *)
 private extension ContentView {
     func beginFileDragSession() {
         guard let mainWindow else { return }
@@ -603,6 +611,7 @@ private extension ContentView {
     }
 }
 
+@available(macOS 14.0, *)
 private struct WindowAccessor: NSViewRepresentable {
     let onResolve: (NSWindow?) -> Void
 
@@ -619,10 +628,4 @@ private struct WindowAccessor: NSViewRepresentable {
             onResolve(nsView.window)
         }
     }
-}
-
-#Preview {
-    ContentView()
-        .environmentObject(ClipboardHistoryController())
-        .modelContainer(for: [ClipboardEntry.self], inMemory: true)
 }

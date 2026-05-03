@@ -1,23 +1,49 @@
-//
-//  ClipmonApp.swift
-//  Clipmon
-//
-//  Created by Ved on 02/05/26.
-//
-
-import SwiftUI
+import AppKit
 import SwiftData
+import SwiftUI
 
 @main
 struct ClipmonApp: App {
+    var body: some Scene {
+        WindowGroup("Clipmon") {
+            RootLaunchView()
+        }
+    }
+}
+
+private struct RootLaunchView: View {
+    @State private var statusBarController = StatusBarController()
+
+    var body: some View {
+        Group {
+            if #available(macOS 14.0, *) {
+                ModernRootView()
+            } else {
+                LegacySupportView()
+            }
+        }
+        .onAppear {
+            statusBarController.ensureStatusItemVisible()
+        }
+    }
+}
+
+@available(macOS 14.0, *)
+private struct ModernRootView: View {
     @StateObject private var controller = ClipboardHistoryController()
 
-    private var sharedModelContainer: ModelContainer = {
-        let fileManager = FileManager.default
+    var body: some View {
+        ContentView()
+            .environmentObject(controller)
+            .modelContainer(ClipmonModelStore.sharedModelContainer)
+    }
+}
+
+@available(macOS 14.0, *)
+private enum ClipmonModelStore {
+    static let sharedModelContainer: ModelContainer = {
         let schema = Schema([ClipboardEntry.self])
-        let supportDirectory = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("Clipmon", isDirectory: true)
-        let modelConfiguration = ModelConfiguration(
+        let configuration = ModelConfiguration(
             "Clipmon",
             schema: schema,
             isStoredInMemoryOnly: false,
@@ -27,32 +53,86 @@ struct ClipmonApp: App {
         )
 
         do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            return try ModelContainer(for: schema, configurations: [configuration])
         } catch {
-            try? fileManager.removeItem(at: supportDirectory)
-            try? fileManager.createDirectory(at: supportDirectory, withIntermediateDirectories: true, attributes: nil)
-
-            do {
-                return try ModelContainer(for: schema, configurations: [modelConfiguration])
-            } catch {
-                fatalError("Could not create ModelContainer: \(error)")
-            }
+            fatalError("Could not create ModelContainer: \(error)")
         }
     }()
+}
 
-    var body: some Scene {
-        Window("Clipmon", id: "main") {
-            ContentView()
-                .environmentObject(controller)
-        }
-        .windowResizability(.contentMinSize)
-        .modelContainer(sharedModelContainer)
+@MainActor
+final class StatusBarController: NSObject {
+    private let popover = NSPopover()
+    private let statusItem: NSStatusItem
 
-        MenuBarExtra("Clipmon", systemImage: "doc.on.clipboard") {
-            MenuBarView()
-                .environmentObject(controller)
+    override init() {
+        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+        super.init()
+        configureStatusItem()
+    }
+
+    func ensureStatusItemVisible() {
+        configureStatusItem()
+
+        popover.behavior = .transient
+        popover.contentSize = NSSize(width: 360, height: 540)
+
+        if #available(macOS 14.0, *) {
+            popover.contentViewController = NSHostingController(
+                rootView: MenuBarView()
+                    .environmentObject(ClipboardHistoryController.shared)
+                    .modelContainer(ClipmonModelStore.sharedModelContainer)
+            )
+        } else {
+            popover.contentViewController = NSHostingController(rootView: LegacySupportView())
         }
-        .menuBarExtraStyle(.window)
-        .modelContainer(sharedModelContainer)
+    }
+
+    private func configureStatusItem() {
+        guard let button = statusItem.button else { return }
+
+        if button.image == nil {
+            button.image = NSImage(
+                systemSymbolName: "doc.on.clipboard",
+                accessibilityDescription: "Clipmon"
+            )?.withSymbolConfiguration(.init(pointSize: 15, weight: .medium))
+        }
+
+        button.title = ""
+        button.toolTip = "Clipmon"
+        button.imagePosition = .imageOnly
+        button.target = self
+        button.action = #selector(togglePopover(_:))
+        button.sendAction(on: [.leftMouseUp, .rightMouseUp])
+    }
+
+    @objc private func togglePopover(_ sender: Any?) {
+        guard let button = statusItem.button else { return }
+
+        if popover.isShown {
+            popover.performClose(sender)
+        } else {
+            popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+            NSApp.activate(ignoringOtherApps: true)
+        }
+    }
+}
+
+private struct LegacySupportView: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Image(systemName: "doc.on.clipboard")
+                .font(.system(size: 42, weight: .semibold))
+                .foregroundColor(.secondary)
+
+            Text("Clipmon")
+                .font(.title.weight(.semibold))
+
+            Text("This build includes the modern clipboard manager on macOS 14 and later. On macOS 11 to 13, the app opens in a compatibility view so the project can still build cleanly.")
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(minWidth: 420, minHeight: 240, alignment: .leading)
+        .padding(24)
     }
 }
