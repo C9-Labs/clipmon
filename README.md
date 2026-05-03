@@ -15,7 +15,7 @@ Most clipboard managers feel like a dump of text. This one treats your clipboard
 
 ## Screenshots
 <img width="380" height="403" alt="Screenshot 2026-05-03 at 12 21 34 AM" src="https://github.com/user-attachments/assets/1534e69a-3342-478f-abef-d97a7aeb97e5" />
-<img width="596" height="461" alt="Screenshot 2026-05-03 at 12 21 25 AM" src="https://github.com/user-attachments/assets/44c7c262-bb3e-4381-b07e-33656030f322" />
+<!-- <img width="596" height="461" alt="Screenshot 2026-05-03 at 12 21 25 AM" src="https://github.com/user-attachments/assets/44c7c262-bb3e-4381-b07e-33656030f322" /> -->
 
 
 ## Features
