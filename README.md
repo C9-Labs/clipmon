@@ -1,6 +1,7 @@
 <img width="125" height="125" alt="appstore" src="https://github.com/user-attachments/assets/bd3139d1-d6ae-49c9-887f-32b9842d438f" />
 
 # clipmon
+[MacOS](https://apps.apple.com/in/app/clipmon/id6765937235?mt=12) | Window | Linux | Android | iOS
 
 Clipboard mega-manager for Mac (stable), Windows and Linux that can sync with Android and iOS
 
